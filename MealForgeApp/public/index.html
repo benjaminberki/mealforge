@@ -1,15 +1,40 @@
 <!doctype html>
 <html>
 <head>
-  <title>Fable</title>
-  <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="shortcut icon" href="fable.ico" />
+    <title>MealForge</title>
+    <meta charset="utf-8" />
+
+    <style>
+        body {
+            font-family: Arial;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        .ingredient-card,
+        .recipe-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
+
 <body>
-    <p>Fable is running</p>
-    <p>You can click on this button:</p>
-    <button class="my-button">Click me</button>
+    <div id="app"></div>
+
     <script src="bundle.js"></script>
 </body>
 </html>
