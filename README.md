@@ -133,7 +133,7 @@ BSc Computer Science (Software Development)
 
 # Live Demo
 
-GitHub Pages deployment link:
+Netfy url:
 
 https://super-cuchufli-c7402c.netlify.app
 
