@@ -163,6 +163,17 @@ button:hover {
     background: #1e5f32;
 }
 
+.delete-button {
+    background: #ffdddd;
+    color: #b42318;
+    border: 1px solid #f5b5b5;
+    margin-top: 12px;
+}
+
+.delete-button:hover {
+    background: #ffc9c9;
+}
+
 .cost-box {
     background: #eef5e6;
     border-radius: 10px;

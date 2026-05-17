@@ -5,8 +5,6 @@ open Browser.Types
 open System
 open Fable.Core.JsInterop
 
-
-
 type Ingredient =
     {
         Name: string
@@ -39,7 +37,7 @@ type MenuDay =
         Dessert: string
         PlannedPortions: int
     }
-    
+
 let storageKey = "mealforge-ingredients"
 
 let mutable ingredients =
@@ -316,7 +314,17 @@ let renderIngredientForm () =
         <div class="card">
             <div class="form-grid">
                 <input id="ingredient-name" placeholder="Ingredient name" />
-                <input id="ingredient-category" placeholder="Category" />
+                <select id="ingredient-category">
+                    <option value="">Select category</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Vegetable">Vegetable</option>
+                    <option value="Fruit">Fruit</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Dry Goods">Dry Goods</option>
+                    <option value="Bakery">Bakery</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Other">Other</option>
+                </select>
                 <input id="ingredient-unit" placeholder="Unit, e.g. kg" />
                 <input id="ingredient-price" placeholder="Price per unit, e.g. 2.50" />
                 <input id="ingredient-supplier" placeholder="Supplier" />
@@ -342,7 +350,6 @@ let renderIngredients () =
                 <p><strong>Price per unit:</strong> %s</p>
                 <p><strong>Supplier:</strong> %s</p>
                 <button class="delete-button" data-ingredient-name="%s">Delete</button>
-
             </div>
             """
             ingredient.Name
@@ -456,8 +463,6 @@ let generateShoppingList () =
                 EstimatedCost = 0.0
             })
     |> List.sortBy (fun item -> item.IngredientName)
-
-
 
 let shoppingListTotalCost () =
     generateShoppingList ()
@@ -662,14 +667,18 @@ and connectEvents () =
                 let ingredientName =
                     button.getAttribute("data-ingredient-name")
 
-                ingredients <-
-                    ingredients
-                    |> List.filter (fun ingredient ->
-                        ingredient.Name <> ingredientName)
+                let confirmed =
+                    window.confirm("Are you sure you want to delete this ingredient?")
 
-                saveIngredientsToLocalStorage ()
+                if confirmed then
+                    ingredients <-
+                        ingredients
+                        |> List.filter (fun ingredient ->
+                            ingredient.Name <> ingredientName)
 
-                renderApp ()
+                    saveIngredientsToLocalStorage ()
+
+                    renderApp ()
 
 loadIngredientsFromLocalStorage ()
 renderApp ()
