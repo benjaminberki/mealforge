@@ -38,10 +38,7 @@ jobs:
 
       - name: Build app
         working-directory: MealForgeApp
-        run: |
-          dotnet tool restore
-          dotnet fable src
-          npx webpack --mode production
+        run: npx webpack --mode production
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
