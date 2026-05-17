@@ -341,13 +341,16 @@ let renderIngredients () =
                 <p><strong>Unit:</strong> %s</p>
                 <p><strong>Price per unit:</strong> %s</p>
                 <p><strong>Supplier:</strong> %s</p>
+                <button class="delete-button" data-ingredient-name="%s">Delete</button>
+
             </div>
             """
             ingredient.Name
             ingredient.Category
             ingredient.Unit
             (currency ingredient.PricePerUnit)
-            ingredient.Supplier)
+            ingredient.Supplier
+            ingredient.Name)
     |> String.concat ""
 
 let renderRecipeIngredients recipe =
@@ -636,6 +639,7 @@ and connectEvents () =
                     }
 
                 ingredients <- ingredients @ [ newIngredient ]
+
                 saveIngredientsToLocalStorage ()
 
                 clearInput "ingredient-name"
@@ -643,6 +647,27 @@ and connectEvents () =
                 clearInput "ingredient-unit"
                 clearInput "ingredient-price"
                 clearInput "ingredient-supplier"
+
+                renderApp ()
+
+    let deleteButtons =
+        document.querySelectorAll(".delete-button")
+
+    for i in 0 .. deleteButtons.length - 1 do
+        let button =
+            deleteButtons.[i] :?> HTMLButtonElement
+
+        button.onclick <-
+            fun _ ->
+                let ingredientName =
+                    button.getAttribute("data-ingredient-name")
+
+                ingredients <-
+                    ingredients
+                    |> List.filter (fun ingredient ->
+                        ingredient.Name <> ingredientName)
+
+                saveIngredientsToLocalStorage ()
 
                 renderApp ()
 
