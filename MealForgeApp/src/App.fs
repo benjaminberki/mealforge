@@ -336,6 +336,96 @@ let renderRecipes () =
             (renderRecipeIngredients recipe))
     |> String.concat ""
 
+type ShoppingListItem =
+    {
+        IngredientName: string
+        Unit: string
+        TotalQuantity: float
+        EstimatedCost: float
+    }
+
+let scaleRecipeIngredient plannedPortions recipe (recipeIngredient: RecipeIngredient) =
+    let scaleFactor =
+        float plannedPortions / float recipe.Portions
+
+    {
+        IngredientName = recipeIngredient.IngredientName
+        Quantity = recipeIngredient.Quantity * scaleFactor
+    }
+
+let getScaledIngredientsForRecipe recipeName plannedPortions =
+    match findRecipe recipeName with
+    | Some recipe ->
+        recipe.Ingredients
+        |> List.map (fun item -> scaleRecipeIngredient plannedPortions recipe item)
+
+    | None ->
+        []
+
+let getIngredientsForMenuDay menuDay =
+    [
+        menuDay.Starter
+        menuDay.MainCourse
+        menuDay.SideDish
+        menuDay.Dessert
+    ]
+    |> List.collect (fun recipeName ->
+        getScaledIngredientsForRecipe recipeName menuDay.PlannedPortions)
+
+let generateShoppingList () =
+    weeklyMenu
+    |> List.collect getIngredientsForMenuDay
+    |> List.groupBy (fun (item: RecipeIngredient) -> item.IngredientName)
+    |> List.map (fun (ingredientName, items: RecipeIngredient list) ->
+        let totalQuantity =
+            items |> List.sumBy (fun item -> item.Quantity)
+
+        match findIngredient ingredientName with
+        | Some ingredient ->
+            {
+                IngredientName = ingredientName
+                Unit = ingredient.Unit
+                TotalQuantity = totalQuantity
+                EstimatedCost = totalQuantity * ingredient.PricePerUnit
+            }
+
+        | None ->
+            {
+                IngredientName = ingredientName
+                Unit = "unknown"
+                TotalQuantity = totalQuantity
+                EstimatedCost = 0.0
+            })
+    |> List.sortBy (fun item -> item.IngredientName)
+
+
+
+let shoppingListTotalCost () =
+    generateShoppingList ()
+    |> List.sumBy (fun item -> item.EstimatedCost)
+
+let renderShoppingList () =
+    generateShoppingList ()
+    |> List.map (fun item ->
+        sprintf
+            """
+            <div class="card shopping-item-card">
+                <div class="card-header">
+                    <h3>%s</h3>
+                    <span>%s</span>
+                </div>
+
+                <p><strong>Total quantity needed:</strong> %.2f %s</p>
+                <p><strong>Estimated cost:</strong> %s</p>
+            </div>
+            """
+            item.IngredientName
+            item.Unit
+            item.TotalQuantity
+            item.Unit
+            (currency item.EstimatedCost))
+    |> String.concat ""
+
 let renderWeeklyMenu () =
     weeklyMenu
     |> List.map (fun menuDay ->
@@ -368,6 +458,33 @@ let renderWeeklyMenu () =
             (currency (calculateMenuDayCostPerPerson menuDay)))
     |> String.concat ""
 
+let renderShoppingListSection () =
+    sprintf
+        """
+        <section>
+            <div class="section-title">
+                <h2>Shopping List Generator</h2>
+                <p>
+                    Total weekly ingredient requirements calculated automatically
+                    from the planned weekly menu.
+                </p>
+            </div>
+
+            <div class="dashboard">
+                <div class="stat-card">
+                    <span class="stat-label">Shopping List Total Cost</span>
+                    <strong>%s</strong>
+                </div>
+            </div>
+
+            <div class="grid">
+                %s
+            </div>
+        </section>
+        """
+        (currency (shoppingListTotalCost()))
+        (renderShoppingList())
+
 let rec renderApp () =
     appContainer.innerHTML <-
         sprintf
@@ -383,6 +500,8 @@ let rec renderApp () =
                         </p>
                     </div>
                 </header>
+
+                %s
 
                 %s
 
@@ -415,6 +534,7 @@ let rec renderApp () =
             """
             (renderDashboard())
             (renderIngredientForm())
+            (renderShoppingListSection())
             (renderWeeklyMenu())
             (renderIngredients())
             (renderRecipes())
