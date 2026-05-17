@@ -135,5 +135,5 @@ BSc Computer Science (Software Development)
 
 GitHub Pages deployment link:
 
-Add your GitHub Pages link here
+https://super-cuchufli-c7402c.netlify.app
 
