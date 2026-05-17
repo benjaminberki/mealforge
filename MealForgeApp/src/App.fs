@@ -1,6 +1,8 @@
 module App
 
 open Browser.Dom
+open Browser.Types
+open System
 
 type Ingredient =
     {
@@ -35,7 +37,7 @@ type MenuDay =
         PlannedPortions: int
     }
 
-let ingredients =
+let mutable ingredients =
     [
         { Name = "Chicken"; Category = "Meat"; Unit = "kg"; PricePerUnit = 5.50; Supplier = "Local Butcher" }
         { Name = "Rice"; Category = "Dry Goods"; Unit = "kg"; PricePerUnit = 2.20; Supplier = "Wholesale Foods" }
@@ -159,51 +161,26 @@ let recipes =
 
 let weeklyMenu =
     [
-        {
-            DayName = "Monday"
-            Starter = "Vegetable Soup"
-            MainCourse = "Chicken Rice Bowl"
-            SideDish = "Garden Salad"
-            Dessert = "Apple Yoghurt Bowl"
-            PlannedPortions = 50
-        }
-
-        {
-            DayName = "Tuesday"
-            Starter = "Vegetable Soup"
-            MainCourse = "Tomato Pasta"
-            SideDish = "Potato Bake"
-            Dessert = "Apple Yoghurt Bowl"
-            PlannedPortions = 45
-        }
-
-        {
-            DayName = "Wednesday"
-            Starter = "Vegetable Soup"
-            MainCourse = "Beef Stew"
-            SideDish = "Potato Bake"
-            Dessert = "Apple Yoghurt Bowl"
-            PlannedPortions = 55
-        }
-
-        {
-            DayName = "Thursday"
-            Starter = "Vegetable Soup"
-            MainCourse = "Cheese Omelette"
-            SideDish = "Garden Salad"
-            Dessert = "Apple Yoghurt Bowl"
-            PlannedPortions = 40
-        }
-
-        {
-            DayName = "Friday"
-            Starter = "Vegetable Soup"
-            MainCourse = "Chicken Rice Bowl"
-            SideDish = "Potato Bake"
-            Dessert = "Apple Yoghurt Bowl"
-            PlannedPortions = 60
-        }
+        { DayName = "Monday"; Starter = "Vegetable Soup"; MainCourse = "Chicken Rice Bowl"; SideDish = "Garden Salad"; Dessert = "Apple Yoghurt Bowl"; PlannedPortions = 50 }
+        { DayName = "Tuesday"; Starter = "Vegetable Soup"; MainCourse = "Tomato Pasta"; SideDish = "Potato Bake"; Dessert = "Apple Yoghurt Bowl"; PlannedPortions = 45 }
+        { DayName = "Wednesday"; Starter = "Vegetable Soup"; MainCourse = "Beef Stew"; SideDish = "Potato Bake"; Dessert = "Apple Yoghurt Bowl"; PlannedPortions = 55 }
+        { DayName = "Thursday"; Starter = "Vegetable Soup"; MainCourse = "Cheese Omelette"; SideDish = "Garden Salad"; Dessert = "Apple Yoghurt Bowl"; PlannedPortions = 40 }
+        { DayName = "Friday"; Starter = "Vegetable Soup"; MainCourse = "Chicken Rice Bowl"; SideDish = "Potato Bake"; Dessert = "Apple Yoghurt Bowl"; PlannedPortions = 60 }
     ]
+
+let currency value =
+    sprintf "£%.2f" value
+
+let getInputValue id =
+    (document.getElementById(id) :?> HTMLInputElement).value.Trim()
+
+let clearInput id =
+    (document.getElementById(id) :?> HTMLInputElement).value <- ""
+
+let tryParseFloat text =
+    match Double.TryParse(text) with
+    | true, value -> Some value
+    | false, _ -> None
 
 let findIngredient name =
     ingredients
@@ -231,76 +208,38 @@ let calculateRecipeCostForPortions recipeName plannedPortions =
     | None -> 0.0
 
 let calculateMenuDayCost menuDay =
-    [
-        menuDay.Starter
-        menuDay.MainCourse
-        menuDay.SideDish
-        menuDay.Dessert
-    ]
+    [ menuDay.Starter; menuDay.MainCourse; menuDay.SideDish; menuDay.Dessert ]
     |> List.sumBy (fun recipeName ->
         calculateRecipeCostForPortions recipeName menuDay.PlannedPortions)
 
 let calculateMenuDayCostPerPerson menuDay =
     calculateMenuDayCost menuDay / float menuDay.PlannedPortions
 
-let totalRecipeCost =
-    recipes
-    |> List.sumBy calculateRecipeCost
-
-let averageCostPerPortion =
-    recipes
-    |> List.averageBy calculateCostPerPortion
-
 let weeklyMenuCost =
-    weeklyMenu
-    |> List.sumBy calculateMenuDayCost
+    weeklyMenu |> List.sumBy calculateMenuDayCost
 
 let totalWeeklyPortions =
-    weeklyMenu
-    |> List.sumBy (fun day -> day.PlannedPortions)
+    weeklyMenu |> List.sumBy (fun day -> day.PlannedPortions)
 
 let averageDailyMenuCost =
     weeklyMenuCost / float weeklyMenu.Length
 
-let currency value =
-    sprintf "£%.2f" value
+let averageCostPerPortion =
+    recipes |> List.averageBy calculateCostPerPortion
 
 let appContainer =
     document.querySelector("#app")
 
-let dashboardHtml =
+let renderDashboard () =
     sprintf
         """
         <section class="dashboard">
-            <div class="stat-card">
-                <span class="stat-label">Ingredients</span>
-                <strong>%i</strong>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Recipes</span>
-                <strong>%i</strong>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Weekly Menu Cost</span>
-                <strong>%s</strong>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Weekly Portions</span>
-                <strong>%i</strong>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Average Daily Cost</span>
-                <strong>%s</strong>
-            </div>
-
-            <div class="stat-card">
-                <span class="stat-label">Average Recipe Cost / Portion</span>
-                <strong>%s</strong>
-            </div>
+            <div class="stat-card"><span class="stat-label">Ingredients</span><strong>%i</strong></div>
+            <div class="stat-card"><span class="stat-label">Recipes</span><strong>%i</strong></div>
+            <div class="stat-card"><span class="stat-label">Weekly Menu Cost</span><strong>%s</strong></div>
+            <div class="stat-card"><span class="stat-label">Weekly Portions</span><strong>%i</strong></div>
+            <div class="stat-card"><span class="stat-label">Average Daily Cost</span><strong>%s</strong></div>
+            <div class="stat-card"><span class="stat-label">Average Recipe Cost / Portion</span><strong>%s</strong></div>
         </section>
         """
         ingredients.Length
@@ -310,7 +249,30 @@ let dashboardHtml =
         (currency averageDailyMenuCost)
         (currency averageCostPerPortion)
 
-let ingredientHtml =
+let renderIngredientForm () =
+    """
+    <section>
+        <div class="section-title">
+            <h2>Add New Ingredient</h2>
+            <p>Add a new stock item to the kitchen ingredient list.</p>
+        </div>
+
+        <div class="card">
+            <div class="form-grid">
+                <input id="ingredient-name" placeholder="Ingredient name" />
+                <input id="ingredient-category" placeholder="Category" />
+                <input id="ingredient-unit" placeholder="Unit, e.g. kg" />
+                <input id="ingredient-price" placeholder="Price per unit, e.g. 2.50" />
+                <input id="ingredient-supplier" placeholder="Supplier" />
+            </div>
+
+            <button id="add-ingredient-button">Add Ingredient</button>
+            <p id="ingredient-message"></p>
+        </div>
+    </section>
+    """
+
+let renderIngredients () =
     ingredients
     |> List.map (fun ingredient ->
         sprintf
@@ -332,7 +294,7 @@ let ingredientHtml =
             ingredient.Supplier)
     |> String.concat ""
 
-let recipeIngredientHtml recipe =
+let renderRecipeIngredients recipe =
     recipe.Ingredients
     |> List.map (fun item ->
         match findIngredient item.IngredientName with
@@ -347,7 +309,7 @@ let recipeIngredientHtml recipe =
             sprintf "<li>%s: ingredient not found</li>" item.IngredientName)
     |> String.concat ""
 
-let recipeHtml =
+let renderRecipes () =
     recipes
     |> List.map (fun recipe ->
         sprintf
@@ -363,9 +325,7 @@ let recipeHtml =
                 <p><strong>Cost per portion:</strong> %s</p>
 
                 <h4>Ingredients</h4>
-                <ul>
-                    %s
-                </ul>
+                <ul>%s</ul>
             </div>
             """
             recipe.Name
@@ -373,10 +333,10 @@ let recipeHtml =
             recipe.Portions
             (currency (calculateRecipeCost recipe))
             (currency (calculateCostPerPortion recipe))
-            (recipeIngredientHtml recipe))
+            (renderRecipeIngredients recipe))
     |> String.concat ""
 
-let weeklyMenuHtml =
+let renderWeeklyMenu () =
     weeklyMenu
     |> List.map (fun menuDay ->
         sprintf
@@ -408,61 +368,105 @@ let weeklyMenuHtml =
             (currency (calculateMenuDayCostPerPerson menuDay)))
     |> String.concat ""
 
-appContainer.innerHTML <-
-    sprintf
-        """
-        <div class="page">
-            <header class="hero">
-                <div>
-                    <p class="eyebrow">Kitchen planning made clearer</p>
-                    <h1>MealForge</h1>
-                    <p class="subtitle">
-                        Menu planning and food cost calculation for school kitchens,
-                        small restaurants, and catering teams.
-                    </p>
-                </div>
-            </header>
+let rec renderApp () =
+    appContainer.innerHTML <-
+        sprintf
+            """
+            <div class="page">
+                <header class="hero">
+                    <div>
+                        <p class="eyebrow">Kitchen planning made clearer</p>
+                        <h1>MealForge</h1>
+                        <p class="subtitle">
+                            Menu planning and food cost calculation for school kitchens,
+                            small restaurants, and catering teams.
+                        </p>
+                    </div>
+                </header>
 
-            %s
+                %s
 
-            <section>
-                <div class="section-title">
-                    <h2>Weekly Menu Planner</h2>
-                    <p>
-                        A five-day school kitchen menu plan with starters, main courses,
-                        side dishes, desserts, portion numbers, and estimated costs.
-                    </p>
-                </div>
+                %s
 
-                <div class="grid">
-                    %s
-                </div>
-            </section>
+                <section>
+                    <div class="section-title">
+                        <h2>Weekly Menu Planner</h2>
+                        <p>A five-day school kitchen menu plan with estimated costs.</p>
+                    </div>
+                    <div class="grid">%s</div>
+                </section>
 
-            <section>
-                <div class="section-title">
-                    <h2>Ingredients</h2>
-                    <p>Basic stock items with prices, units, categories, and suppliers.</p>
-                </div>
+                <section>
+                    <div class="section-title">
+                        <h2>Ingredients</h2>
+                        <p>Stock items with prices, units, categories, and suppliers.</p>
+                    </div>
+                    <div class="grid">%s</div>
+                </section>
 
-                <div class="grid">
-                    %s
-                </div>
-            </section>
+                <section>
+                    <div class="section-title">
+                        <h2>Recipes</h2>
+                        <p>Each recipe calculates total cost and estimated cost per portion.</p>
+                    </div>
+                    <div class="grid">%s</div>
+                </section>
+            </div>
+            """
+            (renderDashboard())
+            (renderIngredientForm())
+            (renderWeeklyMenu())
+            (renderIngredients())
+            (renderRecipes())
 
-            <section>
-                <div class="section-title">
-                    <h2>Recipes</h2>
-                    <p>Each recipe calculates total cost and estimated cost per portion.</p>
-                </div>
+    connectEvents ()
 
-                <div class="grid">
-                    %s
-                </div>
-            </section>
-        </div>
-        """
-        dashboardHtml
-        weeklyMenuHtml
-        ingredientHtml
-        recipeHtml
+and connectEvents () =
+    let addButton =
+        document.getElementById("add-ingredient-button") :?> HTMLButtonElement
+
+    addButton.onclick <-
+        fun _ ->
+            let name = getInputValue "ingredient-name"
+            let category = getInputValue "ingredient-category"
+            let unit = getInputValue "ingredient-unit"
+            let priceText = getInputValue "ingredient-price"
+            let supplier = getInputValue "ingredient-supplier"
+
+            match name, category, unit, tryParseFloat priceText, supplier with
+            | "", _, _, _, _ ->
+                window.alert("Please enter an ingredient name.")
+
+            | _, "", _, _, _ ->
+                window.alert("Please enter a category.")
+
+            | _, _, "", _, _ ->
+                window.alert("Please enter a unit.")
+
+            | _, _, _, None, _ ->
+                window.alert("Please enter a valid price.")
+
+            | _, _, _, _, "" ->
+                window.alert("Please enter a supplier.")
+
+            | _, _, _, Some price, _ ->
+                let newIngredient =
+                    {
+                        Name = name
+                        Category = category
+                        Unit = unit
+                        PricePerUnit = price
+                        Supplier = supplier
+                    }
+
+                ingredients <- ingredients @ [ newIngredient ]
+
+                clearInput "ingredient-name"
+                clearInput "ingredient-category"
+                clearInput "ingredient-unit"
+                clearInput "ingredient-price"
+                clearInput "ingredient-supplier"
+
+                renderApp ()
+
+renderApp ()
