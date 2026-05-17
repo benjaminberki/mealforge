@@ -37,8 +37,11 @@ jobs:
         run: npm install
 
       - name: Build app
-        working-directory: MealForgeApp
-        run: npm run build
+  working-directory: MealForgeApp
+  run: |
+    dotnet tool restore
+    dotnet fable src
+    npx webpack --mode production
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
