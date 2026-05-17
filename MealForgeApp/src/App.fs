@@ -3,6 +3,9 @@ module App
 open Browser.Dom
 open Browser.Types
 open System
+open Fable.Core.JsInterop
+
+
 
 type Ingredient =
     {
@@ -36,6 +39,8 @@ type MenuDay =
         Dessert: string
         PlannedPortions: int
     }
+    
+let storageKey = "mealforge-ingredients"
 
 let mutable ingredients =
     [
@@ -55,6 +60,57 @@ let mutable ingredients =
         { Name = "Yoghurt"; Category = "Dairy"; Unit = "kg"; PricePerUnit = 3.20; Supplier = "Dairy Direct" }
         { Name = "Lettuce"; Category = "Vegetable"; Unit = "kg"; PricePerUnit = 2.75; Supplier = "Fresh Farm Produce" }
     ]
+
+let ingredientToStorageLine (ingredient: Ingredient) =
+    sprintf
+        "%s|%s|%s|%f|%s"
+        ingredient.Name
+        ingredient.Category
+        ingredient.Unit
+        ingredient.PricePerUnit
+        ingredient.Supplier
+
+let saveIngredientsToLocalStorage () =
+    let savedText =
+        ingredients
+        |> List.map ingredientToStorageLine
+        |> String.concat ";;"
+
+    window.localStorage.setItem(storageKey, savedText)
+
+let storageLineToIngredient (line: string) =
+    let parts =
+        line.Split('|')
+
+    if parts.Length = 5 then
+        match Double.TryParse(parts.[3]) with
+        | true, price ->
+            Some
+                {
+                    Name = parts.[0]
+                    Category = parts.[1]
+                    Unit = parts.[2]
+                    PricePerUnit = price
+                    Supplier = parts.[4]
+                }
+
+        | false, _ ->
+            None
+    else
+        None
+
+let loadIngredientsFromLocalStorage () =
+    let savedText =
+        window.localStorage.getItem(storageKey)
+
+    if not (String.IsNullOrWhiteSpace(savedText)) then
+        let loadedIngredients =
+            savedText.Split([| ";;" |], StringSplitOptions.RemoveEmptyEntries)
+            |> Array.choose storageLineToIngredient
+            |> Array.toList
+
+        if loadedIngredients.Length > 0 then
+            ingredients <- loadedIngredients
 
 let recipes =
     [
@@ -580,6 +636,7 @@ and connectEvents () =
                     }
 
                 ingredients <- ingredients @ [ newIngredient ]
+                saveIngredientsToLocalStorage ()
 
                 clearInput "ingredient-name"
                 clearInput "ingredient-category"
@@ -589,4 +646,5 @@ and connectEvents () =
 
                 renderApp ()
 
+loadIngredientsFromLocalStorage ()
 renderApp ()
